@@ -3327,4 +3327,203 @@ c     Compute the ground motions adjustment factor.
       return                                                                    
       end                                                                                                                                                   
 
-     
+
+c ---------------------------------------------------------------------            
+C ** pezeshk et al. (2011) Horizontal **
+C     Notes:
+C        for ENA, stable craton regions
+C        for ENA hardrock (NEHRP site class A, Vs30>2,000 m/s)
+C        Mag from Mw 5.0 to 8.0
+C        Distance (Rrup) up to 1,000 km
+
+c ---------------------------------------------------------------------            
+      Subroutine PezeshkEtAl_2011 ( m, Rrup, specT,
+     1                     period2, lnY, sigma, iflag )
+
+C     Last Updated: 9/8/19
+
+      parameter (MAXPER=22)
+      REAL Period(MAXPER), c1(MAXPER), c2(MAXPER), c3(MAXPER)
+      REAL c4(MAXPER), c5(MAXPER)
+      REAL c6(MAXPER), c7(MAXPER), c8(MAXPER), c9(MAXPER), c10(MAXPER) 
+	  REAL c11(MAXPER), c12(MAXPER), c13(MAXPER), c14(MAXPER)
+      real sigma_reg(MAXPER)
+
+      REAL M, Rrup, R 
+      REAL period2, lnY, XsiT, logY
+
+      real c1T, c2T, c3T, c4T, c5T, c6T,c7T, c8T, c9T
+      real c10T, c11T, c12T, c13T, c14T
+      real sigmalog10, sigmalogy 
+      integer iflag, count1, count2
+
+      data Period / 0.01,0.02,0.03,0.04,0.05,0.075,0.1,0.15,0.2,
+     1              0.25,0.3,0.4,0.5,0.75,1,1.5,2,3,4,5,7.5,10 /
+      data c1 / 1.5828,2.305,1.9848,1.6854,1.4517,1.0698,0.9314, 
+     1                0.3964,-0.4883,-1.0098,-1.68,-2.3106,-3.1365,-4.5494, 
+     2                -5.4113,-6.4806,-6.934,-7.4264,-7.8064,-8.2704, 
+     3               -8.3376,-9.1046 /
+      data c2 / 0.2298,0.1877,0.2203,0.2404,0.2414,0.2989,
+     1               0.3088,0.4317,0.6278,0.7401,0.886,1.022,1.201,
+     2         1.508,1.69,1.867,1.907,1.881,1.895,1.938,1.806,1.899 /
+      data c3 / -0.03847,-0.03697,-0.03616,-0.03578,-0.03468,
+     1         -0.03897,-0.03844,-0.04578,-0.05654,-0.06309,
+     2         -0.07162,-0.07965,-0.09037,-0.1087,-0.1196,-0.1282,
+     3         -0.1287,-0.1205,-0.1183,-0.118,-0.1042,-0.1076 /
+      data c4 / -3.8325,-4.0443,-3.8032,-3.6129,-3.4683,-3.377,
+     1         -3.2926,-3.2112,-3.0304,-2.9959,-2.8894,-2.9265,
+     2         -2.8823,-2.8614,-2.8998,-2.9338,-3.0128,-2.9742,
+     3         -3.005,-2.9501,-2.9839,-2.8611 /
+      data c5 / 0.3535,0.3616,0.3384,0.3247,0.3177,0.318,0.3063,
+     1         0.2937,0.2673,0.2623,0.2481,0.2515,0.2456,0.2424,
+     2         0.2465,0.2525,0.2639,0.2576,0.2588,0.2503,0.2542,0.2395 /
+      data c6 / 0.3321,-0.1222,0.07814,0.2956,0.5224,0.7422,0.7064,
+     1         0.6084,0.5422,0.4421,0.4869,0.4716,0.3333,0.4023,
+     2         0.3766,0.2633,0.3172,0.2585,0.3069,0.3296,
+     3         0.2879,0.2868 /
+      data c7 / -0.09165,-0.09157,-0.1126,-0.118,-0.1296,-0.1215,
+     1         -0.09521,-0.06727,-0.05347,-0.03625,-0.04324,
+     2         -0.04039,-0.02105,-0.03092,-0.02928,-0.01442,
+     3         -0.0215,-0.0152,-0.02545,-0.03023,-0.02252,-0.0229 /
+      data c8 / -2.5517,-2.9998,-3.3125,-3.332,-3.2109,-2.6889,
+     1         -2.209,-1.6121,-1.3516,-1.2309,-1.149,-1.0923,-1.0022,
+     2         -0.975,-0.947,-0.9007,-0.8749,-0.8821,-0.8808,
+     3         -1.0125,-1.1817,-1.3786 /
+
+      data c9 / 0.1831,0.1941,0.2017,0.1977,0.1956,0.1723,0.1472,
+     1         0.1072,0.08784,0.07733,0.07056,0.06554,0.05519,0.05536,
+     2         0.05249,0.04974,0.04774,0.05376,0.05703,0.07332,
+     3         0.09598,0.1222 /
+      data c10 / -0.0004224,-0.0001707,-0.00005322,-0.0001113,
+     1         -0.0002669,-0.0006659,-0.0009254,-0.001077,-0.001045,
+     2         -0.0009648,-0.0009049,-0.0007853,-0.0007069,-0.0005685,
+     3         -0.0004563,-0.000354,-0.0003025,-0.0002641,-0.0002423,
+     4         -0.0002002,-0.0001624,-0.0001268 /
+      data c11 / 6.6521,7.3314,7.1183,6.8113,6.3705,6.0817,
+     1         6.1621,6.2667,6.1905,6.0635,5.9891,6.0263,
+     2         5.9117,5.9835,6.1234,5.9875,6.1355,6.0598,
+     3         6.2536,6.3423,6.5181,6.5384 /
+      data c12 / -0.02105,-0.01974,-0.02094,-0.0218,-0.02244,
+     1         -0.02312,-0.02259,-0.02185,-0.02046,-0.01933,
+     2         -0.01837,-0.01683,-0.01556,-0.01339,-0.0118,
+     3         -0.0104,-0.009443,-0.008509,-0.007859,-0.0069,
+     4         -0.00724,-0.007485 /
+      data c13 / 0.3778,0.3691,0.3817,0.3914,0.399,0.4108,0.4102,
+     1         0.4066,0.3979,0.3908,0.3867,0.3774,0.3722,0.3654,
+     2         0.3588,0.3569,0.3561,0.354,0.3527,0.3577,0.373,
+     3         0.3848 /
+      data c14 / 0.2791,0.2796,0.2838,0.2874,0.2905,0.2976,0.3007,
+     1         0.3023,0.3033,0.3041,0.3068,0.3082,0.3119,0.3203,
+     2         0.3249,0.3327,0.3387,0.3431,0.3463,0.358,0.371,0.381 /
+      data sigma_reg / 0.021,0.023,0.022,0.024,0.025,0.025,0.022,0.016,
+     1         0.014,0.015,0.015,0.017,0.017,0.021,0.022,0.019,
+     2         0.021,0.024,0.03,0.032,0.03,0.024 /
+      
+C Find the requested spectral period and corresponding coefficients
+      nPer = 22
+C First check for the PGA case (i.e., specT=0.0) 
+      if (specT .eq. 0.0) then
+         period1 = period(1)
+         c1T  = c1(1)
+         c2T  = c2(1)
+         c3T  = c3(1)
+         c4T  = c4(1)
+         c5T  = c5(1)
+         c6T = c6(1)
+         c7T = c7(1)
+         c8T = c8(1)
+         c9T = c9(1)
+         c10T = c10(1)
+         c11T   = c11(1)
+         c12T   = c12(1)
+         c13T   = c13(1)
+	 c14T   = c14(1)
+	 xsiT   = sigma_reg(1)
+         
+         goto 1011
+      elseif (specT .gt. 0.0) then
+C Now loop over the spectral period range of the attenuation relationship.
+         do i=2,nper-1
+            if (specT .ge. period(i) .and. specT .le. period(i+1) ) then
+               count1 = i
+               count2 = i+1
+               goto 1020 
+            endif
+         enddo
+      endif
+
+C Selected spectral period is outside range defined by attenuaton model.
+      write (*,*) 
+      write (*,*) 'Pezeshk et al. (2011) Horizontal'
+      write (*,*) 'attenuation model is not defined for a '
+      write (*,*) ' spectral period of: ' 
+      write (*,'(a10,f10.5)') ' Period = ',specT
+      write (*,*) 'This spectral period is outside the defined'
+      write (*,*) 'period range in the code or beyond the range'
+      write (*,*) 'of spectral periods for interpolation.'
+      write (*,*) 'Please check the input file.'
+      write (*,*) 
+      stop 99
+
+C Interpolate the coefficients for the requested spectral period.
+ 1020  call interp (period(count1),period(count2),c1(count1),c1(count2),
+     +                   specT,c1T,iflag)
+       call interp (period(count1),period(count2),c2(count1),c2(count2),
+     +                   specT,c2T,iflag)
+       call interp (period(count1),period(count2),c3(count1),c3(count2),
+     +                   specT,c3T,iflag)
+       call interp (period(count1),period(count2),c4(count1),c4(count2),
+     +                   specT,c4T,iflag)
+       call interp (period(count1),period(count2),c5(count1),c5(count2),
+     +                   specT,c5T,iflag)
+       call interp (period(count1),period(count2),c6(count1),c6(count2),
+     +                   specT,c6T,iflag)
+       call interp (period(count1),period(count2),c7(count1),c7(count2),
+     +                   specT,c7T,iflag)
+       call interp (period(count1),period(count2),c8(count1),c8(count2),
+     +                   specT,c8T,iflag)
+       call interp (period(count1),period(count2),c9(count1),c9(count2),
+     +                   specT,c9T,iflag)
+       call interp (period(count1),period(count2),c10(count1),c10(count2),
+     +                   specT,c10T,iflag)
+       call interp (period(count1),period(count2),c11(count1),c11(count2),
+     +                   specT,c11T,iflag)
+       call interp (period(count1),period(count2),c12(count1),c12(count2),
+     +                   specT,c12T,iflag)
+       call interp (period(count1),period(count2),c13(count1),c13(count2),
+     +                   specT,c13T,iflag)
+       call interp (period(count1),period(count2),c14(count1),c14(count2),
+     +                   specT,c14T,iflag)
+       call interp (period(count1),period(count2),sigma_reg(count1),
+     +                   sigma_reg(count2),specT,xsiT,iflag)
+	 
+ 1011 period1 = specT                                                                                                              
+
+C.....Compute the Ground motion.......
+      R = sqrt(Rrup**2.0 + c11T**2.0)
+  
+      logY = c1T + c2T*m + c3T*m**2.0 +
+     1      (c4T + c5T*m) * min(alog(R),alog(70.0))/alog(10.0) +
+     2      (c6T + c7T*m)*max(min(alog(R/70.0), alog(140/70.0)),0.0)/alog(10.0) + 
+     3      (c8T + c9T*m) * max(alog(R/140.0),0.0)/alog(10.0) +
+     4      c10T * R
+
+      lnY = alog(10.0**logY)
+C     Convert ground motion to units of gals.
+      lnY = lnY + 6.89
+
+C     Compute Sigma 
+      if (m .le. 7.0) then
+          sigmalogy = c12T*m + c13T
+      else
+          sigmalogy = c14T - 6.95*0.001*m
+      endif
+	  
+      sigmalog10 = sqrt(sigmalogy**2.0 + xsiT**2.0)
+      sigma = alog(10.0**sigmalog10)
+
+      period2 = period1
+
+      return
+      end 
+           

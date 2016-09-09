@@ -1326,6 +1326,23 @@ C     Model Number = 370
          maxaper = 10.0
       endif
 
+
+c ***** Pezeshk et al. (2011) Models *****
+c Pezeshk et al. (2011) - Horizontal, ENA Hard Rock
+C     Model Number = 115
+      if ( jcalc .eq. 115 ) then
+         anper = 22
+         minaper = 0.01
+         maxaper = 10.0
+      endif
+      
+C      Model Number = 1150
+      if ( jcalc .eq. 1150 ) then
+         anper = 22
+         minaper = 0.01
+         maxaper = 10.0
+      endif
+      
 c ***** Atkinson and Boore Models *****
 c     Atkinson and Boore (1994) - Horizontal, EUS Hard Rock
 C     Model Number = 100

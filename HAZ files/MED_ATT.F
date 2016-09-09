@@ -2921,6 +2921,29 @@ C     Model Number = 370
       
 C ******  CEUS Models *********
 C
+
+c ***** Pezeshk et al. (2011) Models *****
+c     Pezeshk et al. (2011) - Horizontal, EUS Hard Rock
+C     Model Number = 115
+      if ( jcalc .eq. 115 ) then
+         call PezeshkEtAl_2011 ( mag, rupdist, specT,
+     1            period2, lnY, sigma, iflag )
+
+         attenname1 = 'Pezeshk et al. 2011, ENA, Hard Rock'
+
+      endif
+c     Pezeshk et al. (2011) - Horizontal, EUS, Vs30 = 760m/s
+C     Model Number = 1150
+      if ( jcalc .eq. 1150 ) then
+         call PezeshkEtAl_2011 ( mag, rupdist, specT,
+     1            period2, lnY, sigma, iflag )
+         call BCHHR2Vs760 ( lnY, specT, lnSa )
+         lnY = lnSa
+         attenname1 = 'Pezeshk et al. 2011, ENA, BCH ampf for Vs30 760 m/s'
+                
+      endif
+         
+         
 c ***** Atkinson and Boore Models *****
 c     Atkinson and Boore (1994) - Horizontal, EUS Hard Rock
 C     Model Number = 100
